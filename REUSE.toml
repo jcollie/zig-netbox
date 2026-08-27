@@ -1,0 +1,11 @@
+version = 1
+
+[[annotations]]
+path = "api/api.json"
+SPDX-FileCopyrightText = "NetBox Labs"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "flake.lock"
+SPDX-FileCopyrightText = "© 2026 Jeffrey C. Ollie"
+SPDX-License-Identifier = "CC0-1.0"

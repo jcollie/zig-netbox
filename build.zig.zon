@@ -1,0 +1,23 @@
+// SPDX-FileCopyrightText: © 2026 Jeffrey C. Ollie
+// SPDX-License-Identifier: MIT
+
+.{
+    .name = .netbox,
+    .version = "0.0.0",
+    .fingerprint = 0xc15b915792c602b5, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .openapi2zig = .{
+            .url = "git+https://github.com/christianhelle/openapi2zig.git#1b51858d2825ed9cd1e0c40473114c6ab069639a",
+            .hash = "openapi2zig-0.2.0-ykENArlTngCQDbLo7OIRhIHUjQPLgmYBLlU-WQ32SFS6",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        // For example...
+        //"LICENSE",
+        //"README.md",
+    },
+}

@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: © 2026 Jeffrey C. Ollie
+# SPDX-License-Identifier: MIT
+
+{
+  description = "zig-netbox";
+  inputs = {
+    nixpkgs = {
+      url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst";
+    };
+  };
+  outputs =
+    {
+      nixpkgs,
+      ...
+    }:
+    let
+      inherit (nixpkgs) lib;
+      linuxSystems = builtins.filter (
+        system: (lib.systems.elaborate system).isLinux
+      ) lib.systems.flakeExposed;
+      makePackages =
+        system:
+        import nixpkgs {
+          inherit system;
+        };
+      forAllSystems = lib.genAttrs linuxSystems;
+    in
+    {
+      devShells = forAllSystems (
+        system:
+        let
+          pkgs = makePackages system;
+        in
+        {
+          default = pkgs.mkShell {
+            name = "zig-netbox";
+            nativeBuildInputs = [
+              pkgs.reuse
+              pkgs.zig_0_16
+            ];
+          };
+        }
+      );
+    };
+}
