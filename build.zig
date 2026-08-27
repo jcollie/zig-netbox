@@ -37,7 +37,7 @@ pub fn build(b: *std.Build) void {
         const install_api_zig = b.addInstallFile(api_zig, "api.zig");
         b.getInstallStep().dependOn(&install_api_zig.step);
 
-        const netbox_mod = b.createModule(.{
+        const netbox_mod = b.addModule("netbox", .{
             .root_source_file = api_zig,
             .target = target,
             .optimize = optimize,
