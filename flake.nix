@@ -35,6 +35,7 @@
           default = pkgs.mkShell {
             name = "zig-netbox";
             nativeBuildInputs = [
+              pkgs.git-pages-cli
               pkgs.reuse
               pkgs.zig_0_16
             ];

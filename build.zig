@@ -46,5 +46,26 @@ pub fn build(b: *std.Build) void {
         break :netbox_mod netbox_mod;
     };
 
-    _ = netbox_mod;
+    const netbox_lib = b.addLibrary(.{
+        .name = "netbox",
+        .root_module = netbox_mod,
+    });
+
+    const install_docs = b.addInstallDirectory(.{
+        .source_dir = netbox_lib.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "docs",
+    });
+
+    const docs_step = b.step("docs", "Build the API docs");
+    docs_step.dependOn(&install_docs.step);
+
+    const netbox_tests = b.addTest(.{
+        .root_module = netbox_mod,
+    });
+
+    const run_netbox_tests = b.addRunArtifact(netbox_tests);
+
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_netbox_tests.step);
 }
