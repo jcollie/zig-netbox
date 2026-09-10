@@ -39,6 +39,14 @@
               pkgs.reuse
               pkgs.zig_0_16
             ];
+            # The Forgejo runner has no system CA bundle, and a dev shell does
+            # not provide one on its own, so Zig's TLS init fails when it
+            # fetches dependencies. Point it at cacert explicitly. This has to
+            # go in shellHook rather than a plain attribute, because `nix
+            # develop` strips SSL_CERT_FILE from the derivation environment.
+            shellHook = ''
+              export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+            '';
           };
         }
       );
