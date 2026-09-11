@@ -109,6 +109,50 @@ sent as a repeat of the key, which is what NetBox reads as "any of these":
 Filters that genuinely take one value stay scalar: `limit` is `?i64`, `brief`
 is `?bool`.
 
+### Fields with a fixed set of values
+
+A choice list becomes a Zig enum — 153 of them, covering 214 fields and
+filters — so a wrong value is a compile error rather than a 400:
+
+```zig
+var devices = try netbox.dcim_devices_list(&client, .{ .face = .front });
+```
+
+The tag **is** the wire value, escaped where it is not a bare identifier, so
+nothing is lost in translation and nothing has to be looked up:
+
+```zig
+pub const FaceEnum = enum { front, @"null", rear };
+```
+
+`@"null"` is not the absence of a value — it is NetBox's literal string
+`"null"`, which its filters accept to mean "has none". An absent value is the
+`?` on the field.
+
+On the response side NetBox wraps a choice in a `{value, label}` object, so the
+enum is a field deeper down:
+
+```zig
+pub const PrefixStatus = struct {
+    value: ?StatusEnum = null,
+    label: ?LabelEnum20 = null,
+};
+
+if (prefix.status) |status| {
+    if (status.value == .active) { ... }
+}
+```
+
+Two kinds of choice list stay `[]const u8`, because neither can use its values
+as tag names: one containing the empty string, since `@""` is not a legal Zig
+identifier, and one whose values are not strings. NetBox allows blank on many
+of the writable and `{value, label}` variants, so a field can be an enum in one
+place and a string in another — `dcim_devices_list`'s `face` filter is a
+`?FaceEnum` while `DeviceWithConfigContextFace.value` is a `?[]const u8`.
+
+Some array filters carry an `x-spec-enum-id` but no values at all, and there is
+nothing to build a type from in that case; those stay `?[]const []const u8`.
+
 ## How the generation works
 
 `build.zig` builds `src/generate.zig` into a small executable, feeds
@@ -124,13 +168,21 @@ with `parameters_as_struct` on, which is what produces the options structs
 described above.
 
 The dependency points at [a fork](https://github.com/jcollie/openapi2zig)
-rather than at upstream, for two fixes this schema needs. Upstream maps every
-`type: array` query parameter to `[]const u8`, which covers 77% of NetBox's
-parameters and leaves no way to send more than one value; and it flattens the
-one-member `allOf` that OpenAPI 3.0 requires for a nullable `$ref`, which
+rather than at upstream, for three changes this schema needs. Upstream maps
+every `type: array` query parameter to `[]const u8`, which covers 77% of
+NetBox's parameters and leaves no way to send more than one value; it flattens
+the one-member `allOf` that OpenAPI 3.0 requires for a nullable `$ref`, which
 copies the target's fields under a name built from the enclosing type and the
-property. Thirteen of those names collided with real schemas, and the result
-did not compile.
+property — thirteen of those collided with real schemas and the result did not
+compile; and it ignores `enum` entirely.
+
+Enum generation is off by default there and turned on by `src/generate.zig`.
+The grouping uses `x-spec-enum-id`, the marker drf-spectacular writes to say
+which schemas share a choice set — worth knowing about because the values alone
+do not settle it. The same set appears with a `null` variant added or not
+depending on whether it is a nullable field or a filter, so 44 of NetBox's 100
+ids turn up with two or three different value lists; the generator takes their
+union.
 
 Upgrading to a new NetBox release is therefore a matter of replacing
 `api/api.json` with the schema from that release. A running NetBox will hand

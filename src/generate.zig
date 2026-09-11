@@ -30,6 +30,9 @@ pub fn main(init: std.process.Init) !u8 {
         .input_path = "api.json",
         .output_path = "api.zig",
         .parameters_as_struct = true,
+        // NetBox declares a choice list on most status and type fields, and on
+        // the filters for them. Without this they would all be []const u8.
+        .generate_enums = true,
     };
 
     var unified_doc = try openapi2zig.parseToUnified(alloc, content.written());
