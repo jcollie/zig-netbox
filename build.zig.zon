@@ -18,6 +18,6 @@
         "src",
         "api",
         "LICENSES",
-        //"README.md",
+        "README.md",
     },
 }

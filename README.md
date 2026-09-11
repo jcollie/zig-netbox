@@ -1,0 +1,163 @@
+<!--
+SPDX-FileCopyrightText: © 2026 Jeffrey C. Ollie
+SPDX-License-Identifier: MIT
+-->
+
+# zig-netbox
+
+Zig bindings for the [NetBox](https://netboxlabs.com/docs/netbox/) REST API,
+generated from the OpenAPI specification that NetBox publishes.
+
+Nothing in this repository is written by hand. `api/api.json` is NetBox's own
+schema, and the Zig is produced from it at build time, so the bindings track
+whatever version of the schema is checked in rather than drifting from it.
+
+**API documentation: <https://jeff.jcollie.page/zig-netbox/>** — generated from
+the doc comments and from the generated source itself, and published from
+`main` by CI.
+
+## What is generated
+
+The checked-in schema is **NetBox REST API 4.6.9 (4.6)**: 339 paths and 1146
+component schemas, which come out as roughly 2000 public types and 3600
+functions.
+
+For each operation the generator emits three functions. Taking
+`dcim_devices_list` as the example:
+
+| Function | Returns | Use it when |
+| --- | --- | --- |
+| `dcim_devices_list` | `Owned(PaginatedDeviceWithConfigContextList)` | You want the parsed body and are happy for a non-2xx status to be `error.ResponseError`. |
+| `dcim_devices_listResult` | `ApiResult(PaginatedDeviceWithConfigContextList)` | You need to tell an API error from a parse error, and to read the error body. |
+| `dcim_devices_listRaw` | `RawResponse` | You want the status and bytes and will do your own parsing. |
+
+Query and path parameters arrive as a single options struct —
+`dcim_devices_listOptions` — rather than as a long positional argument list.
+
+`Owned(T)` holds the response body, the `std.json.Parsed(T)` that borrows from
+it, and the allocator; call `deinit()` on it and the pair goes away together.
+`ApiResult(T)` is a tagged union of `ok`, `api_error` and `parse_error`, and
+also has a `deinit()` that frees whichever arm is live.
+
+## Using it
+
+Add the dependency:
+
+```console
+zig fetch --save git+https://git.jcollie.dev/jeff/zig-netbox.git
+```
+
+and wire the module up in `build.zig`:
+
+```zig
+const netbox_dep = b.dependency("netbox", .{
+    .target = target,
+    .optimize = optimize,
+});
+exe_mod.addImport("netbox", netbox_dep.module("netbox"));
+```
+
+### Authentication
+
+**NetBox authenticates with `Authorization: Token <key>`, and the generated
+client sends `Authorization: Bearer <key>`.** The generator's header code is
+written for OpenAI-shaped APIs — it also has `OpenAI-Organization` and
+`OpenAI-Project` fields that NetBox has no use for — and it does not read the
+security scheme out of the schema.
+
+So leave `api_key` empty, which suppresses the `Authorization` header
+altogether, and put the real one in `default_headers`:
+
+```zig
+const netbox = @import("netbox");
+
+var client: netbox.Client = .init(gpa, io, ""); // empty: no Bearer header
+defer client.deinit();
+
+client.withBaseUrl("https://netbox.example.com");
+client.default_headers = &.{
+    .{ .name = "Authorization", .value = "Token 0123456789abcdef..." },
+};
+
+var devices = try netbox.dcim_devices_list(&client, .{ .limit = 50 });
+defer devices.deinit();
+
+for (devices.value().results) |device| {
+    std.debug.print("{s}\n", .{device.name orelse "(unnamed)"});
+}
+```
+
+`Client.init` takes an allocator, an `std.Io` and the key; the base URL is set
+separately and defaults to the empty string, so a client that is never given
+one will make requests against a relative path and fail in a confusing way.
+
+## How the generation works
+
+`build.zig` builds `src/generate.zig` into a small executable, feeds
+`api/api.json` to it on standard input, and captures its standard output as
+`api.zig`. That captured file — never written into the source tree — is the
+root source of the `netbox` module, and is also installed to `zig-out/api.zig`
+so it can be read when something needs explaining.
+
+The generator itself is a thin driver around
+[openapi2zig](https://github.com/christianhelle/openapi2zig); `src/generate.zig`
+parses the schema into openapi2zig's unified document and asks it for code,
+with `parameters_as_struct` on, which is what produces the options structs
+described above.
+
+Upgrading to a new NetBox release is therefore a matter of replacing
+`api/api.json` with the schema from that release. A running NetBox will hand
+you its own:
+
+```console
+curl -o api/api.json https://netbox.example.com/api/schema/?format=json
+```
+
+Regenerating takes a while and a fair amount of memory — the schema is 14 MB,
+and the Zig that comes out of it is about 6 MB.
+
+## Building
+
+```console
+nix develop            # Zig 0.16, reuse, git-pages-cli
+zig build              # generates api.zig and installs it
+zig build test         # runs the module's tests
+zig build docs         # writes the API documentation to zig-out/docs
+```
+
+The documentation has to be **served over HTTP, not opened as a file**: the
+viewer is a WebAssembly program that fetches `sources.tar` and `main.wasm` at
+runtime, and a browser refuses both from a `file://` page. Point any static
+server at `zig-out/docs`, or read the published copy linked above.
+
+The dev shell sets `SSL_CERT_FILE` explicitly, because the CI runners have no
+system CA bundle and Zig's TLS cannot fetch dependencies without one.
+
+## Where this lives
+
+The canonical repository is on Forgejo, with a mirror on GitHub:
+
+```console
+git clone https://git.jcollie.dev/jeff/zig-netbox.git
+git clone https://github.com/jcollie/zig-netbox.git
+```
+
+It is also on [Radicle](https://radicle.xyz/), where its Repository ID is
+
+    rad:z3mWmgeb7htjXzgjbr5F9PyoXx9p
+
+and that ID is the only way to find it, since Radicle has no central index to
+search:
+
+```console
+rad clone rad:z3mWmgeb7htjXzgjbr5F9PyoXx9p
+```
+
+## Licensing
+
+This project follows the [REUSE](https://reuse.software/) standard, and
+`nix develop -c reuse lint` is part of CI.
+
+The code here is MIT. `api/api.json` is NetBox's schema and is Apache-2.0,
+copyright NetBox Labs; the Zig generated from it inherits that. Full texts are
+in `LICENSES/`.
