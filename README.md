@@ -59,27 +59,24 @@ exe_mod.addImport("netbox", netbox_dep.module("netbox"));
 
 ### Authentication
 
-**NetBox authenticates with `Authorization: Token <key>`, and the generated
-client sends `Authorization: Bearer <key>`.** The generator's header code is
-written for OpenAI-shaped APIs — it also has `OpenAI-Organization` and
-`OpenAI-Project` fields that NetBox has no use for — and it does not read the
-security scheme out of the schema.
-
-So leave `api_key` empty, which suppresses the `Authorization` header
-altogether, and put the real one in `default_headers`:
+The key passed to `Client.init` becomes the `Authorization` header **verbatim**,
+so the scheme prefix is part of it. NetBox's schema documents the two it accepts:
+`Token <token>` for a v1 token and `Bearer <key>.<token>` for a v2 one. A bare
+token with no prefix is not one of them.
 
 ```zig
 const netbox = @import("netbox");
 
-var client: netbox.Client = .init(gpa, io, ""); // empty: no Bearer header
+// The prefix is part of the key, not something the client adds.
+var client: netbox.Client = .init(gpa, io, "Token 0123456789abcdef");
 defer client.deinit();
 
 client.withBaseUrl("https://netbox.example.com");
-client.default_headers = &.{
-    .{ .name = "Authorization", .value = "Token 0123456789abcdef..." },
-};
 
-var devices = try netbox.dcim_devices_list(&client, .{ .limit = 50 });
+var devices = try netbox.dcim_devices_list(&client, .{
+    .limit = 50,
+    .site_id = &.{ 1, 2 },
+});
 defer devices.deinit();
 
 for (devices.value().results) |device| {
@@ -87,9 +84,30 @@ for (devices.value().results) |device| {
 }
 ```
 
+An empty key suppresses the header entirely, which is how you reach an endpoint
+that takes no authentication.
+
 `Client.init` takes an allocator, an `std.Io` and the key; the base URL is set
 separately and defaults to the empty string, so a client that is never given
 one will make requests against a relative path and fail in a confusing way.
+
+The `Client` struct also carries `organization` and `project` fields that emit
+`OpenAI-Organization` and `OpenAI-Project` headers. NetBox has no use for
+either — they are the generator's own furniture, and leaving them null is
+correct.
+
+### Filters that take several values
+
+Most NetBox filters accept more than one value, and the generated field is a
+slice — `site_id: ?[]const i64`, `name: ?[]const []const u8`. Each element is
+sent as a repeat of the key, which is what NetBox reads as "any of these":
+
+```zig
+.{ .site_id = &.{ 1, 2 } }   //  ?site_id=1&site_id=2
+```
+
+Filters that genuinely take one value stay scalar: `limit` is `?i64`, `brief`
+is `?bool`.
 
 ## How the generation works
 
@@ -104,6 +122,15 @@ The generator itself is a thin driver around
 parses the schema into openapi2zig's unified document and asks it for code,
 with `parameters_as_struct` on, which is what produces the options structs
 described above.
+
+The dependency points at [a fork](https://github.com/jcollie/openapi2zig)
+rather than at upstream, for two fixes this schema needs. Upstream maps every
+`type: array` query parameter to `[]const u8`, which covers 77% of NetBox's
+parameters and leaves no way to send more than one value; and it flattens the
+one-member `allOf` that OpenAPI 3.0 requires for a nullable `$ref`, which
+copies the target's fields under a name built from the enclosing type and the
+property. Thirteen of those names collided with real schemas, and the result
+did not compile.
 
 Upgrading to a new NetBox release is therefore a matter of replacing
 `api/api.json` with the schema from that release. A running NetBox will hand
