@@ -13,7 +13,7 @@ jobs:
     runs-on: nixos
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: https://code.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Lint licensing
         run: nix develop -c reuse lint
@@ -22,7 +22,7 @@ jobs:
     runs-on: nixos
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: https://code.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Run tests
         run: nix develop -c zig build test
@@ -34,10 +34,14 @@ jobs:
       - test
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: https://code.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build docs
         run: nix develop -c zig build docs
 
       - name: Publish docs
-        run: nix develop -c git-pages-cli https://jeff.ocj.page/zig-netbox/ --server ocj.page --token ${{ forge.token }} --upload-dir zig-out/docs
+        run: >
+          nix develop -c git-pages-cli https://jeff.jcollie.page/zig-netbox/
+          --server jcollie.page
+          --token ${{ forge.token }}
+          --upload-dir zig-out/docs
