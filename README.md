@@ -214,11 +214,13 @@ system CA bundle and Zig's TLS cannot fetch dependencies without one.
 
 ## Where this lives
 
-The canonical repository is on Forgejo, with a mirror on GitHub:
+The canonical repository is on Forgejo, with mirrors on GitHub and
+[Tangled](https://tangled.org/jcollie.dev/zig-netbox):
 
 ```console
 git clone https://git.jcollie.dev/jeff/zig-netbox.git
 git clone https://github.com/jcollie/zig-netbox.git
+git clone https://tangled.org/jcollie.dev/zig-netbox
 ```
 
 It is also on [Radicle](https://radicle.xyz/), where its Repository ID is
