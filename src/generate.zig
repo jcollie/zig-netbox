@@ -136,7 +136,7 @@ pub fn main(init: std.process.Init) !u8 {
         return 1;
     }
 
-    const generated = try openapi2zig.generateCode(alloc, io, unified_doc, args);
+    const generated = try openapi2zig.generateCode(alloc, unified_doc, args);
     defer alloc.free(generated);
 
     try stdout.writeAll(generated);
