@@ -122,12 +122,12 @@ The tag **is** the wire value, escaped where it is not a bare identifier, so
 nothing is lost in translation and nothing has to be looked up:
 
 ```zig
-pub const FaceEnum = enum { front, @"null", rear };
+pub const FaceEnum = enum { front, null, rear };
 ```
 
-`@"null"` is not the absence of a value — it is NetBox's literal string
-`"null"`, which its filters accept to mean "has none". An absent value is the
-`?` on the field.
+The `null` tag is not the absence of a value — it is NetBox's literal string
+`"null"`, which its filters accept to mean "has none", written `.null`. An
+absent value is the `?` on the field.
 
 On the response side NetBox wraps a choice in a `{value, label}` object, so the
 enum is a field deeper down:

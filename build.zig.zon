@@ -8,8 +8,8 @@
     .minimum_zig_version = "0.17.0",
     .dependencies = .{
         .openapi2zig = .{
-            .url = "git+https://github.com/jcollie/openapi2zig.git?ref=zig-0.17#5ce516bf386b926dd5c8d2574941520c5190eee0",
-            .hash = "openapi2zig-0.5.6-ykENAlCsdAHghpNR2hKlMM4O7-sSvEmTjeXHbJD75uka",
+            .url = "git+https://github.com/jcollie/openapi2zig.git?ref=zig-0.17#0885402f2a7a6014c43bf5147bcba69fa6234bfb",
+            .hash = "openapi2zig-0.5.6-ykENAgmtdAHXZ9dFrNhEdjY1kQ1kvKizfHlVEmHqG8BW",
         },
     },
     .paths = .{
