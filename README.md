@@ -198,7 +198,7 @@ and the Zig that comes out of it is about 6 MB.
 ## Building
 
 ```console
-nix develop            # Zig 0.17, reuse, git-pages-cli
+nix develop            # Zig 0.17, zon2nix, reuse, git-pages-cli
 zig build              # generates api.zig and installs it
 zig build test         # runs the module's tests
 zig build docs         # writes the API documentation to zig-out/docs
@@ -208,6 +208,16 @@ The documentation has to be **served over HTTP, not opened as a file**: the
 viewer is a WebAssembly program that fetches `sources.tar` and `main.wasm` at
 runtime, and a browser refuses both from a `file://` page. Point any static
 server at `zig-out/docs`, or read the published copy linked above.
+
+`build.zig.zon.nix` is the same dependency set as `build.zig.zon`, written out
+for Nix by [zon2nix](https://github.com/jcollie/zon2nix) and exposed as the
+flake's `zig-deps` package. CI copies it into `zig-pkg/` before building, so
+Zig finds every package already there and the downloads come from the Nix
+cache instead. It is generated, and regenerated whenever a dependency changes:
+
+```console
+nix develop -c zon2nix --17 --nix=build.zig.zon.nix build.zig.zon
+```
 
 The dev shell sets `SSL_CERT_FILE` explicitly, because the CI runners have no
 system CA bundle and Zig's TLS cannot fetch dependencies without one.

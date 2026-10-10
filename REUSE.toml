@@ -9,3 +9,8 @@ SPDX-License-Identifier = "Apache-2.0"
 path = "flake.lock"
 SPDX-FileCopyrightText = "© 2026 Jeffrey C. Ollie"
 SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "build.zig.zon.nix"
+SPDX-FileCopyrightText = "© 2026 Jeffrey C. Ollie"
+SPDX-License-Identifier = "MIT"

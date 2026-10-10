@@ -32,6 +32,13 @@ jobs:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Nix fetches the Zig dependencies, so they come from the Nix cache,
+      # and they go where `zig build` looks for them before fetching.
+      - name: Stage Zig dependencies
+        run: |
+          mkdir -p zig-pkg
+          cp -rsL --no-preserve=mode "$(nix build --no-link --print-out-paths .#zig-deps)"/. zig-pkg/
+
       - name: Run tests
         run: nix develop -c zig build test
 
@@ -50,6 +57,13 @@ jobs:
     steps:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Nix fetches the Zig dependencies, so they come from the Nix cache,
+      # and they go where `zig build` looks for them before fetching.
+      - name: Stage Zig dependencies
+        run: |
+          mkdir -p zig-pkg
+          cp -rsL --no-preserve=mode "$(nix build --no-link --print-out-paths .#zig-deps)"/. zig-pkg/
 
       - name: Build docs
         run: nix develop -c zig build docs
