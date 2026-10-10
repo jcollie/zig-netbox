@@ -37,7 +37,7 @@
             nativeBuildInputs = [
               pkgs.git-pages-cli
               pkgs.reuse
-              pkgs.zig_0_16
+              pkgs.zig_0_17
             ];
             # The Forgejo runner has no system CA bundle, and a dev shell does
             # not provide one on its own, so Zig's TLS init fails when it

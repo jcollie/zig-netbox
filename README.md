@@ -198,7 +198,7 @@ and the Zig that comes out of it is about 6 MB.
 ## Building
 
 ```console
-nix develop            # Zig 0.16, reuse, git-pages-cli
+nix develop            # Zig 0.17, reuse, git-pages-cli
 zig build              # generates api.zig and installs it
 zig build test         # runs the module's tests
 zig build docs         # writes the API documentation to zig-out/docs
