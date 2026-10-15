@@ -40,8 +40,9 @@
         in
         {
           # The Zig dependencies, fetched by Nix rather than by `zig build`, so
-          # that they come through the Nix cache. Handed to Zig with
-          # `--system "$(nix build --print-out-paths .#zig-deps)"`.
+          # that they come through the Nix cache. Handed to Zig with `--system`,
+          # plus a `--fork` of each package in `pathDependencyPackages`; see
+          # the README.
           # Regenerate with
           #   nix develop -c zon2nix --17 --nix=build.zig.zon.nix build.zig.zon
           zig-deps = pkgs.callPackage ./build.zig.zon.nix { };

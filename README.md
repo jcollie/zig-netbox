@@ -211,13 +211,31 @@ server at `zig-out/docs`, or read the published copy linked above.
 
 `build.zig.zon.nix` is the same dependency set as `build.zig.zon`, written out
 for Nix by [zon2nix](https://github.com/jcollie/zon2nix) and exposed as the
-flake's `zig-deps` package. CI copies it into `zig-pkg/` before building, so
-Zig finds every package already there and the downloads come from the Nix
-cache instead. It is generated, and regenerated whenever a dependency changes:
+flake's `zig-deps` package. CI hands it to `zig build --system`, so the
+downloads come from the Nix cache and Zig is forbidden to fetch anything
+itself. It is generated, and regenerated whenever a dependency changes:
 
 ```console
 nix develop -c zon2nix --17 --nix=build.zig.zon.nix build.zig.zon
 ```
+
+`--system` alone is not enough. openapi2zig vendors zig-yaml as a `.path`
+dependency, and Zig 0.17.0 resolves such a dependency inside a `--system`
+directory to an absolute path, which it then refuses with `expected path
+relative to build root; found absolute path`. The way round is to copy each
+such package into the build root and pass it as a relative `--fork`. zon2nix
+lists them as `pathDependencyPackages`, so the workflow reads the list rather
+than naming a package hash:
+
+```console
+deps=$(nix build --no-link --print-out-paths .#zig-deps)
+p=$(nix eval --raw .#zig-deps.pathDependencyPackages --apply 'builtins.concatStringsSep " "')
+cp -rsL --no-preserve=mode "$deps/$p" "fork-$p"
+nix develop -c zig build test --system "$deps" --fork="fork-$p"
+```
+
+With only one such package, that is all there is to it; the workflow loops
+over the list.
 
 The dev shell sets `SSL_CERT_FILE` explicitly, because the CI runners have no
 system CA bundle and Zig's TLS cannot fetch dependencies without one.

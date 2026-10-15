@@ -32,15 +32,22 @@ jobs:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Nix fetches the Zig dependencies, so they come from the Nix cache,
-      # and they go where `zig build` looks for them before fetching.
-      - name: Stage Zig dependencies
-        run: |
-          mkdir -p zig-pkg
-          cp -rsL --no-preserve=mode "$(nix build --no-link --print-out-paths .#zig-deps)"/. zig-pkg/
-
+      # Nix fetches the Zig dependencies, so they come from the Nix cache, and
+      # --system hands them to Zig and forbids it fetching anything itself. A
+      # package with .path dependencies of its own -- openapi2zig vendors
+      # zig-yaml -- cannot be built from inside the --system directory on Zig
+      # 0.17.0, so each one zon2nix names is copied into the build root and
+      # given as a relative --fork.
       - name: Run tests
-        run: nix develop -c zig build test
+        shell: bash
+        run: |
+          deps=$(nix build --no-link --print-out-paths .#zig-deps)
+          flags=(--system "$deps")
+          for p in $(nix eval --raw .#zig-deps.pathDependencyPackages --apply 'builtins.concatStringsSep " "'); do
+            cp -rsL --no-preserve=mode "$deps/$p" "fork-$p"
+            flags+=("--fork=fork-$p")
+          done
+          nix develop -c zig build test "${flags[@]}"
 
       - name: Push to the cache
         if: ${{ !cancelled() && forge.ref == 'refs/heads/main' }}
@@ -58,15 +65,22 @@ jobs:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Nix fetches the Zig dependencies, so they come from the Nix cache,
-      # and they go where `zig build` looks for them before fetching.
-      - name: Stage Zig dependencies
-        run: |
-          mkdir -p zig-pkg
-          cp -rsL --no-preserve=mode "$(nix build --no-link --print-out-paths .#zig-deps)"/. zig-pkg/
-
+      # Nix fetches the Zig dependencies, so they come from the Nix cache, and
+      # --system hands them to Zig and forbids it fetching anything itself. A
+      # package with .path dependencies of its own -- openapi2zig vendors
+      # zig-yaml -- cannot be built from inside the --system directory on Zig
+      # 0.17.0, so each one zon2nix names is copied into the build root and
+      # given as a relative --fork.
       - name: Build docs
-        run: nix develop -c zig build docs
+        shell: bash
+        run: |
+          deps=$(nix build --no-link --print-out-paths .#zig-deps)
+          flags=(--system "$deps")
+          for p in $(nix eval --raw .#zig-deps.pathDependencyPackages --apply 'builtins.concatStringsSep " "'); do
+            cp -rsL --no-preserve=mode "$deps/$p" "fork-$p"
+            flags+=("--fork=fork-$p")
+          done
+          nix develop -c zig build docs "${flags[@]}"
 
       - name: Publish docs
         run: >
