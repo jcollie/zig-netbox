@@ -39,11 +39,11 @@ let
 
   # Every package, by the hash Zig knows it by, as Nix fetches it.
   packages = {
-    "openapi2zig-0.5.6-ykENAgmtdAHXZ9dFrNhEdjY1kQ1kvKizfHlVEmHqG8BW" = fetchZigGit {
+    "openapi2zig-0.5.6-ykENAj3kdQEdAjdqR2dT8QbPAKsWlU6FLJerzTMkwwx6" = fetchZigGit {
       name = "openapi2zig";
       url = "https://github.com/jcollie/openapi2zig.git";
-      rev = "0885402f2a7a6014c43bf5147bcba69fa6234bfb";
-      hash = "sha256-Ff4ny2eBjLw1xATwkhcfb0mfAWsfM03tixcRlx7A5eA=";
+      rev = "174a2bc301123e03a52a212079d50f4ea83253a3";
+      hash = "sha256-P89Z7SUokRUgVqpMWaPjLfDYahCQI9fhyc2AVQkZhyA=";
     };
   };
 
@@ -55,7 +55,7 @@ let
   # that wants `--system` copies each of these into its build root and passes
   # `--fork=` with a relative path; see the README.
   pathDependencyPackages = [
-    "openapi2zig-0.5.6-ykENAgmtdAHXZ9dFrNhEdjY1kQ1kvKizfHlVEmHqG8BW"
+    "openapi2zig-0.5.6-ykENAj3kdQEdAjdqR2dT8QbPAKsWlU6FLJerzTMkwwx6"
   ];
 in
 # One directory holding every package the way Zig unpacks it -- filtered by
